@@ -157,8 +157,8 @@ def main():
     # Sidebar for uploading PDF files
     with st.sidebar:
         st.title("Menu:")
-        pdf_docs = st.file_uploader(
-            "Upload your PDF Files and Click on the Submit & Process Button", accept_multiple_files=True)
+        pdf_ppt_docs = st.file_uploader(
+            "Upload your PDF/PPT Files and Click on Submit & Process", accept_multiple_files=True)
         if st.button("Submit & Process"):
             with st.spinner("Processing..."):
                 pdf_docs = [doc for doc in pdf_ppt_docs if doc.name.lower().endswith(('.pdf'))]
