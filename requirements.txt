@@ -6,6 +6,7 @@ openai
 faiss-cpu
 altair
 tiktoken
+python-pptx
 # uncomment to use huggingface llms
 # huggingface-hub==0.14.1
 
