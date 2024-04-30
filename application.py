@@ -150,7 +150,7 @@ def user_input(user_question):
 
 def main():
     st.set_page_config(
-        page_title="OpenAI PDF Chatbot",
+        page_title="OpenAI PDF/PPT Chatbot",
         page_icon="book"
     )
 
@@ -171,7 +171,7 @@ def main():
                 st.success("Done")
 
     # Main content area for displaying chat messages
-    st.title("Chat with PDF files")
+    st.title("Chat with PDF and PPT files")
     st.write("Welcome to the chat!")
     st.sidebar.button('Clear Chat History', on_click=clear_chat_history)
 
