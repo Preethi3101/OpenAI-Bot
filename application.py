@@ -128,7 +128,7 @@ def user_input(user_question):
 #     with st.sidebar:
 #         st.subheader("Your documents")
 #         pdf_docs = st.file_uploader(
-#             "Upload your PDFs here and click on 'Process'", accept_multiple_files=True)
+#             "Upload your PDFs/PPTs here and click on 'Process'", accept_multiple_files=True)
 #         if st.button("Process"):
 #             with st.spinner("Processing"):
 #                 # get pdf text
