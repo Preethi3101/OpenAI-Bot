@@ -125,7 +125,7 @@ def main():
     # Placeholder for chat messages
     if "messages" not in st.session_state.keys():
         st.session_state.messages = [
-            {"role": "assistant", "content": "Enter folder path containing pdfs/ppts/word docs and ask me a question"}]
+            {"role": "assistant", "content": "upload a folder containing pdfs/ppts/word docs and ask me a question"}]
 
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
