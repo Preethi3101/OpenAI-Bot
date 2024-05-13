@@ -11,7 +11,16 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.chains.question_answering import load_qa_chain
 from langchain.prompts import PromptTemplate
 from pptx import Presentation
+from docx import Document 
 
+def get_text_from_word(word_docs):
+    text = ""
+    for word in word_docs:
+        doc = Document(word)
+        for para in doc.paragraphs:
+            text += para.text
+    return text
+    
 def get_pdf_text(pdf_docs):
     text = ""
     for pdf in pdf_docs:
@@ -164,9 +173,11 @@ def main():
             with st.spinner("Processing..."):
                 pdf_docs = [doc for doc in pdf_ppt_docs if doc.name.lower().endswith(('.pdf'))]
                 ppt_docs = [doc for doc in pdf_ppt_docs if doc.name.lower().endswith(('.ppt', '.pptx'))]
+                word_docs = [file for file in files if file.name.lower().endswith(('.doc', '.docx'))]    
                 pdf_text = get_pdf_text(pdf_docs)
                 ppt_text = get_text_from_ppt(ppt_docs)
-                combined_text = pdf_text + ppt_text
+                word_text = get_text_from_word(word_docs)
+                combined_text = pdf_text + ppt_text + word_text
                 text_chunks = get_text_chunks(combined_text)
                 get_vectorstore(text_chunks)
                 st.success("Done")
