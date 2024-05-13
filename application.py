@@ -100,8 +100,12 @@ def main():
     # Sidebar for uploading folder
     with st.sidebar:
         st.title("Menu:")
-        folder_path = st.text_input("Enter folder path:")
-        if st.button("Submit & Process") and os.path.isdir(folder_path):
+        folder_uploaded = st.file_uploader("Upload a folder:", type=["zip"], accept_multiple_files=False)
+        if folder_uploaded:
+            folder_path = os.path.join(os.getcwd(), folder_uploaded.name)
+            os.makedirs(folder_path, exist_ok=True)
+            with open(os.path.join(folder_path, folder_uploaded.name), "wb") as f:
+                f.write(folder_uploaded.getvalue())
             files = []
             for root, dirs, filenames in os.walk(folder_path):
                 for filename in filenames:
@@ -115,7 +119,7 @@ def main():
             combined_text = pdf_text + ppt_text + word_text
             text_chunks = get_text_chunks(combined_text)
             get_vectorstore(text_chunks)
-            st.success("Done")
+            st.success("Folder uploaded and processed successfully")
 
     # Main content area for displaying chat messages
     st.title("OPENAI CHATBOT")
