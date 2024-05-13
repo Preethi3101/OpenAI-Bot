@@ -173,7 +173,7 @@ def main():
             with st.spinner("Processing..."):
                 pdf_docs = [doc for doc in pdf_ppt_docs if doc.name.lower().endswith(('.pdf'))]
                 ppt_docs = [doc for doc in pdf_ppt_docs if doc.name.lower().endswith(('.ppt', '.pptx'))]
-                word_docs = [file for file in files if file.name.lower().endswith(('.doc', '.docx'))]    
+                word_docs = [doc for doc in pdf_ppt_docs if doc.name.lower().endswith(('.doc', '.docx'))]    
                 pdf_text = get_pdf_text(pdf_docs)
                 ppt_text = get_text_from_ppt(ppt_docs)
                 word_text = get_text_from_word(word_docs)
