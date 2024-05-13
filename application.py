@@ -3,6 +3,12 @@ from dotenv import load_dotenv
 from PyPDF2 import PdfReader
 from langchain.embeddings import OpenAIEmbeddings, HuggingFaceInstructEmbeddings
 from langchain.vectorstores import FAISS
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.chains.question_answering import load_qa_chain
+import os
+from pptx import Presentation
+from docx import Document 
+from dotenv import load_dotenv
 from langchain.chat_models import ChatOpenAI
 from langchain.memory import ConversationBufferMemory
 from langchain.chains import ConversationalRetrievalChain
@@ -10,8 +16,8 @@ from langchain.llms import HuggingFaceHub
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.chains.question_answering import load_qa_chain
 from langchain.prompts import PromptTemplate
-from pptx import Presentation
-from docx import Document 
+load_dotenv()
+os.getenv("OPENAI_API_KEY")
 
 def get_text_from_word(word_docs):
     text = ""
@@ -48,29 +54,14 @@ def get_text_chunks(text):
     chunks = splitter.split_text(text)
     return chunks  # list of strings
 
-
-
 def get_vectorstore(chunks):
     embeddings = OpenAIEmbeddings()
-    # embeddings = HuggingFaceInstructEmbeddings(model_name="hkunlp/instructor-xl")
     vectorstore = FAISS.from_texts(texts=chunks, embedding=embeddings)
     vectorstore.save_local("faiss_index")
 
-
-# def get_conversation_chain(vectorstore):
-#     llm = ChatOpenAI()
-#     # llm = HuggingFaceHub(repo_id="google/flan-t5-xxl", model_kwargs={"temperature":0.5, "max_length":512})
-
-#     memory = ConversationBufferMemory(
-#         memory_key='chat_history', return_messages=True)
-#     conversation_chain = ConversationalRetrievalChain.from_llm(
-#         llm=llm,
-#         retriever=vectorstore.as_retriever(),
-#         memory=memory
-#     )
-    
-
-#     return conversation_chain
+def clear_chat_history():
+    st.session_state.messages = [
+        {"role": "assistant", "content": "upload a folder containing pdfs/ppts/word docs and ask me a question"}]
 
 def get_conversation_chain():
     prompt_template = """
@@ -88,75 +79,17 @@ def get_conversation_chain():
     chain = load_qa_chain(llm=model, chain_type="stuff", prompt=prompt)
     return chain
 
-def clear_chat_history():
-    st.session_state.messages = [
-        {"role": "assistant", "content": "upload some pdfs and ask me a question"}]
-
-# def handle_userinput(user_question):
-#     response = st.session_state.conversation({'question': user_question})
-#     st.session_state.chat_history = response['chat_history']
-
-#     for i, message in enumerate(st.session_state.chat_history):
-#         if i % 2 == 0:
-#             st.write(user_template.replace(
-#                 "{{MSG}}", message.content), unsafe_allow_html=True)
-#         else:
-#             st.write(bot_template.replace(
-#                 "{{MSG}}", message.content), unsafe_allow_html=True)
-
 def user_input(user_question):
     embeddings = OpenAIEmbeddings()  # type: ignore
 
     new_db = FAISS.load_local("faiss_index", embeddings, allow_dangerous_deserialization=True) 
     docs = new_db.similarity_search(user_question)
-
-    chain = get_conversation_chain()
+    chain=get_conversation_chain()
 
     response = chain(
         {"input_documents": docs, "question": user_question}, return_only_outputs=True, )
 
-    print(response)
     return response
-
-# def main():
-#     load_dotenv()
-#     st.set_page_config(page_title="Chat with multiple PDFs",
-#                        page_icon=":books:")
-#     st.write(css, unsafe_allow_html=True)
-
-#     if "conversation" not in st.session_state:
-#         st.session_state.conversation = None
-#     if "chat_history" not in st.session_state:
-#         st.session_state.chat_history = None
-
-#     st.header("Chat with multiple PDFs :books:")
-#     user_question = st.text_input("Ask a question about your documents:")
-#     if user_question:
-#         handle_userinput(user_question)
-
-#     with st.sidebar:
-#         st.subheader("Your documents")
-#         pdf_docs = st.file_uploader(
-#             "Upload your PDFs/PPTs here and click on 'Process'", accept_multiple_files=True)
-#         if st.button("Process"):
-#             with st.spinner("Processing"):
-#                 # get pdf text
-#                 raw_text = get_pdf_text(pdf_docs)
-
-#                 # get the text chunks
-#                 text_chunks = get_text_chunks(raw_text)
-
-#                 # create vector store
-#                 vectorstore = get_vectorstore(text_chunks)
-
-#                 # create conversation chain
-#                 st.session_state.conversation = get_conversation_chain(
-#                     vectorstore)
-
-
-# if __name__ == '__main__':
-#     main()
-
 
 def main():
     st.set_page_config(
@@ -164,35 +97,35 @@ def main():
         page_icon="book"
     )
 
-    # Sidebar for uploading PDF files
+    # Sidebar for uploading folder
     with st.sidebar:
         st.title("Menu:")
-        pdf_ppt_docs = st.file_uploader(
-            "Upload your PDF/PPT Files and Click on Submit & Process", accept_multiple_files=True)
-        if st.button("Submit & Process"):
-            with st.spinner("Processing..."):
-                pdf_docs = [doc for doc in pdf_ppt_docs if doc.name.lower().endswith(('.pdf'))]
-                ppt_docs = [doc for doc in pdf_ppt_docs if doc.name.lower().endswith(('.ppt', '.pptx'))]
-                word_docs = [doc for doc in pdf_ppt_docs if doc.name.lower().endswith(('.doc', '.docx'))]    
-                pdf_text = get_pdf_text(pdf_docs)
-                ppt_text = get_text_from_ppt(ppt_docs)
-                word_text = get_text_from_word(word_docs)
-                combined_text = pdf_text + ppt_text + word_text
-                text_chunks = get_text_chunks(combined_text)
-                get_vectorstore(text_chunks)
-                st.success("Done")
+        folder_path = st.text_input("Enter folder path:")
+        if st.button("Submit & Process") and os.path.isdir(folder_path):
+            files = []
+            for root, dirs, filenames in os.walk(folder_path):
+                for filename in filenames:
+                    files.append(os.path.join(root, filename))
+            pdf_docs = [file for file in files if file.lower().endswith('.pdf')]
+            ppt_docs = [file for file in files if file.lower().endswith(('.ppt', '.pptx'))]
+            word_docs = [file for file in files if file.lower().endswith(('.doc', '.docx'))]
+            pdf_text = get_pdf_text(pdf_docs)
+            ppt_text = get_text_from_ppt(ppt_docs)
+            word_text = get_text_from_word(word_docs)
+            combined_text = pdf_text + ppt_text + word_text
+            text_chunks = get_text_chunks(combined_text)
+            get_vectorstore(text_chunks)
+            st.success("Done")
 
     # Main content area for displaying chat messages
     st.title("OPENAI CHATBOT")
     st.write("Welcome to the chat!")
     st.sidebar.button('Clear Chat History', on_click=clear_chat_history)
 
-    # Chat input
     # Placeholder for chat messages
-
     if "messages" not in st.session_state.keys():
         st.session_state.messages = [
-            {"role": "assistant", "content": "upload some pdfs/ppts and ask me a question"}]
+            {"role": "assistant", "content": "Enter folder path containing pdfs/ppts/word docs and ask me a question"}]
 
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
@@ -217,7 +150,6 @@ def main():
         if response is not None:
             message = {"role": "assistant", "content": full_response}
             st.session_state.messages.append(message)
-
 
 if __name__ == "__main__":
     main()
