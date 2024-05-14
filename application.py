@@ -125,22 +125,6 @@ def main():
                 text_chunks = get_text_chunks(combined_text)
                 get_vectorstore(text_chunks)
                 st.success("Done")
-        folder_path = st.text_input("Enter folder path:")
-        if st.button("Submit & Process") and os.path.isdir(folder_path):
-            files = []
-            for root, dirs, filenames in os.walk(folder_path):
-                for filename in filenames:
-                    files.append(os.path.join(root, filename))
-            pdf_docs = [file for file in files if file.lower().endswith('.pdf')]
-            ppt_docs = [file for file in files if file.lower().endswith(('.ppt', '.pptx'))]
-            word_docs = [file for file in files if file.lower().endswith(('.doc', '.docx'))]
-            pdf_text = get_pdf_text(pdf_docs)
-            ppt_text = get_text_from_ppt(ppt_docs)
-            word_text = get_text_from_word(word_docs)
-            combined_text = pdf_text + ppt_text + word_text
-            text_chunks = get_text_chunks(combined_text)
-            get_vectorstore(text_chunks)
-            st.success("Done")
 
     # Main content area for displaying chat messages
     st.title("OPENAI CHATBOT")
