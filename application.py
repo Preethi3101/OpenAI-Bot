@@ -109,25 +109,22 @@ def main():
         st.title("Menu:")
         folder_uploaded = st.file_uploader("Upload a files:", accept_multiple_files=True)
         if folder_uploaded:
-            folder_path = os.path.join(os.getcwd(), folder_uploaded.name)
-            os.makedirs(folder_path, exist_ok=True)
-            with open(os.path.join(folder_path, folder_uploaded.name), "wb") as f:
-                f.write(folder_uploaded.getvalue())
-            files = []
-            for root, dirs, filenames in os.walk(folder_path):
-                for filename in filenames:
-                    files.append(os.path.join(root, filename))
-            pdf_docs = [file for file in files if file.lower().endswith('.pdf')]
-            ppt_docs = [file for file in files if file.lower().endswith(('.ppt', '.pptx'))]
-            word_docs = [file for file in files if file.lower().endswith(('.doc', '.docx'))]
-            pdf_text = get_pdf_text(pdf_docs)
-            ppt_text = get_text_from_ppt(ppt_docs)
-            word_text = get_text_from_word(word_docs)
-            word_text = get_text_from_excel(excel_docs)
-            combined_text = pdf_text + ppt_text + word_text + excel_docs
-            text_chunks = get_text_chunks(combined_text)
-            get_vectorstore(text_chunks)
-            st.success("Folder uploaded and processed successfully")
+            pdf_docs = st.file_uploader(
+            "Upload your Excel Files and Click on the Submit & Process Button", accept_multiple_files=True)
+            if st.button("Submit & Process"):
+                with st.spinner("Processing..."):
+                    pdf_docs = [file for file in files if file.lower().endswith('.pdf')]
+                    ppt_docs = [file for file in files if file.lower().endswith(('.ppt', '.pptx'))]
+                    word_docs = [file for file in files if file.lower().endswith(('.doc', '.docx'))]
+                    excel_docs = [file for file in files if file.lower().endswith(('.xls', '.xlsx'))]
+                    pdf_text = get_pdf_text(pdf_docs)
+                    ppt_text = get_text_from_ppt(ppt_docs)
+                    word_text = get_text_from_word(word_docs)
+                    word_text = get_text_from_excel(excel_docs)
+                    combined_text = pdf_text + ppt_text + word_text + excel_docs
+                    text_chunks = get_text_chunks(combined_text)
+                    get_vectorstore(text_chunks)
+                    st.success("Folder uploaded and processed successfully")
 
     # Main content area for displaying chat messages
     st.title("OPENAI CHATBOT")
