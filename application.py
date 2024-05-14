@@ -100,7 +100,7 @@ def main():
     # Sidebar for uploading folder
     with st.sidebar:
         st.title("Menu:")
-        folder_uploaded = st.file_uploader("Upload a folder:", type=["Zip"], accept_multiple_files=False)
+        folder_uploaded = st.file_uploader("Upload a files:", accept_multiple_files=True)
         if folder_uploaded:
             folder_path = os.path.join(os.getcwd(), folder_uploaded.name)
             os.makedirs(folder_path, exist_ok=True)
