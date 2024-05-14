@@ -16,6 +16,7 @@ from langchain.llms import HuggingFaceHub
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.chains.question_answering import load_qa_chain
 from langchain.prompts import PromptTemplate
+import pandas as pd
 load_dotenv()
 os.getenv("OPENAI_API_KEY")
 
