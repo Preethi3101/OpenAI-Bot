@@ -27,6 +27,13 @@ def get_text_from_word(word_docs):
             text += para.text
     return text
     
+def get_text_from_excel(excel_docs):
+    text = ""
+    for excel in excel_docs:
+        df = pd.read_excel(excel)
+        text += " ".join(df.stack().astype(str))
+    return text
+    
 def get_pdf_text(pdf_docs):
     text = ""
     for pdf in pdf_docs:
@@ -61,7 +68,7 @@ def get_vectorstore(chunks):
 
 def clear_chat_history():
     st.session_state.messages = [
-        {"role": "assistant", "content": "upload a folder containing pdfs/ppts/word docs and ask me a question"}]
+        {"role": "assistant", "content": "upload a folder containing pdfs/ppts/word/excel docs and ask me a question"}]
 
 def get_conversation_chain():
     prompt_template = """
@@ -116,7 +123,8 @@ def main():
             pdf_text = get_pdf_text(pdf_docs)
             ppt_text = get_text_from_ppt(ppt_docs)
             word_text = get_text_from_word(word_docs)
-            combined_text = pdf_text + ppt_text + word_text
+            word_text = get_text_from_excel(excel_docs)
+            combined_text = pdf_text + ppt_text + word_text + excel_docs
             text_chunks = get_text_chunks(combined_text)
             get_vectorstore(text_chunks)
             st.success("Folder uploaded and processed successfully")
