@@ -104,12 +104,11 @@ def main():
         page_icon="book"
     )
 
-    # Sidebar for uploading folder
+    # Sidebar for uploading files
     with st.sidebar:
         st.title("Menu:")
-        folder_uploaded = st.file_uploader("Upload a folder:", type="folder")
-        if folder_uploaded:
-            files = st.file_uploader("Upload your Excel Files and Click on the Submit & Process Button", accept_multiple_files=True)
+        files = st.file_uploader("Upload your files:", accept_multiple_files=True)
+        if files:
             if st.button("Submit & Process"):
                 with st.spinner("Processing..."):
                     pdf_docs = [file for file in files if file.name.lower().endswith('.pdf')]
@@ -123,7 +122,7 @@ def main():
                     combined_text = pdf_text + ppt_text + word_text + excel_text
                     text_chunks = get_text_chunks(combined_text)
                     get_vectorstore(text_chunks)
-                    st.success("Folder uploaded and processed successfully")
+                    st.success("Files uploaded and processed successfully")
 
     # Main content area for displaying chat messages
     st.title("OPENAI CHATBOT")
@@ -134,7 +133,7 @@ def main():
     # Placeholder for chat messages
     if "messages" not in st.session_state:
         st.session_state.messages = [
-            {"role": "assistant", "content": "Upload a folder containing PDFs, PPTs, Word docs, and Excel files, and then ask me a question."}
+            {"role": "assistant", "content": "Upload your files and then ask me a question."}
         ]
 
     for message in st.session_state.messages:
