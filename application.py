@@ -107,21 +107,20 @@ def main():
     # Sidebar for uploading folder
     with st.sidebar:
         st.title("Menu:")
-        folder_uploaded = st.file_uploader("Upload a files:", accept_multiple_files=True)
+        folder_uploaded = st.file_uploader("Upload a folder:", type="folder")
         if folder_uploaded:
-            pdf_docs = st.file_uploader(
-            "Upload your Excel Files and Click on the Submit & Process Button", accept_multiple_files=True)
+            files = st.file_uploader("Upload your Excel Files and Click on the Submit & Process Button", accept_multiple_files=True)
             if st.button("Submit & Process"):
                 with st.spinner("Processing..."):
-                    pdf_docs = [file for file in files if file.lower().endswith('.pdf')]
-                    ppt_docs = [file for file in files if file.lower().endswith(('.ppt', '.pptx'))]
-                    word_docs = [file for file in files if file.lower().endswith(('.doc', '.docx'))]
-                    excel_docs = [file for file in files if file.lower().endswith(('.xls', '.xlsx'))]
+                    pdf_docs = [file for file in files if file.name.lower().endswith('.pdf')]
+                    ppt_docs = [file for file in files if file.name.lower().endswith(('.ppt', '.pptx'))]
+                    word_docs = [file for file in files if file.name.lower().endswith(('.doc', '.docx'))]
+                    excel_docs = [file for file in files if file.name.lower().endswith(('.xls', '.xlsx'))]
                     pdf_text = get_pdf_text(pdf_docs)
                     ppt_text = get_text_from_ppt(ppt_docs)
                     word_text = get_text_from_word(word_docs)
-                    word_text = get_text_from_excel(excel_docs)
-                    combined_text = pdf_text + ppt_text + word_text + excel_docs
+                    excel_text = get_text_from_excel(excel_docs)
+                    combined_text = pdf_text + ppt_text + word_text + excel_text
                     text_chunks = get_text_chunks(combined_text)
                     get_vectorstore(text_chunks)
                     st.success("Folder uploaded and processed successfully")
@@ -129,18 +128,20 @@ def main():
     # Main content area for displaying chat messages
     st.title("OPENAI CHATBOT")
     st.write("Welcome to the chat!")
-    st.sidebar.button('Clear Chat History', on_click=clear_chat_history)
+    if st.sidebar.button('Clear Chat History'):
+        clear_chat_history()
 
     # Placeholder for chat messages
-    if "messages" not in st.session_state.keys():
+    if "messages" not in st.session_state:
         st.session_state.messages = [
-            {"role": "assistant", "content": "upload a folder containing pdfs/ppts/word docs and ask me a question"}]
+            {"role": "assistant", "content": "Upload a folder containing PDFs, PPTs, Word docs, and Excel files, and then ask me a question."}
+        ]
 
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.write(message["content"])
 
-    if prompt := st.chat_input():
+    if prompt := st.text_input("You:", key="user_input"):
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user"):
             st.write(prompt)
@@ -150,15 +151,8 @@ def main():
         with st.chat_message("assistant"):
             with st.spinner("Thinking..."):
                 response = user_input(prompt)
-                placeholder = st.empty()
-                full_response = ''
-                for item in response['output_text']:
-                    full_response += item
-                    placeholder.markdown(full_response)
-                placeholder.markdown(full_response)
-        if response is not None:
-            message = {"role": "assistant", "content": full_response}
-            st.session_state.messages.append(message)
+                if response is not None:
+                    st.write(response)
 
 if __name__ == "__main__":
     main()
