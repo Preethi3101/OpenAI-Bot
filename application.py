@@ -105,54 +105,61 @@ def main():
         page_icon="book"
     )
 
-    # Sidebar for uploading files
+    # Sidebar for uploading PDF files
+    # Sidebar for uploading folder
     with st.sidebar:
         st.title("Menu:")
-        files = st.file_uploader("Upload your files:", accept_multiple_files=True)
-        if files:
-            if st.button("Submit & Process"):
-                with st.spinner("Processing..."):
-                    pdf_docs = [file for file in files if file.name.lower().endswith('.pdf')]
-                    ppt_docs = [file for file in files if file.name.lower().endswith(('.ppt', '.pptx'))]
-                    word_docs = [file for file in files if file.name.lower().endswith(('.doc', '.docx'))]
-                    excel_docs = [file for file in files if file.name.lower().endswith(('.xls', '.xlsx'))]
-                    pdf_text = get_pdf_text(pdf_docs)
-                    ppt_text = get_text_from_ppt(ppt_docs)
-                    word_text = get_text_from_word(word_docs)
-                    excel_text = get_text_from_excel(excel_docs)
-                    combined_text = pdf_text + ppt_text + word_text + excel_text
-                    text_chunks = get_text_chunks(combined_text)
-                    get_vectorstore(text_chunks)
-                    st.success("Files uploaded and processed successfully")
+        pdf_ppt_docs = st.file_uploader(
+            "Upload your PDF/PPT Files and Click on Submit & Process", accept_multiple_files=True)
+        if st.button("Submit & Process"):
+            with st.spinner("Processing..."):
+                pdf_docs = [doc for doc in pdf_ppt_docs if doc.name.lower().endswith(('.pdf'))]
+                ppt_docs = [doc for doc in pdf_ppt_docs if doc.name.lower().endswith(('.ppt', '.pptx'))]
+                word_docs = [doc for doc in pdf_ppt_docs if doc.name.lower().endswith(('.doc', '.docx'))]  
+                excel_docs = [doc for doc in pdf_ppt_docs if doc.name.lower().endswith(('.xls', '.xlsx'))]  
+                pdf_text = get_pdf_text(pdf_docs)
+                ppt_text = get_text_from_ppt(ppt_docs)
+                word_text = get_text_from_word(word_docs)
+                xl_text = get_text_from_excel(excel_docs)
+                combined_text = pdf_text + ppt_text + word_text
+                text_chunks = get_text_chunks(combined_text)
+                get_vectorstore(text_chunks)
+                st.success("Done")
+        folder_path = st.text_input("Enter folder path:")
+        if st.button("Submit & Process") and os.path.isdir(folder_path):
+            files = []
+            for root, dirs, filenames in os.walk(folder_path):
+                for filename in filenames:
+                    files.append(os.path.join(root, filename))
+            pdf_docs = [file for file in files if file.lower().endswith('.pdf')]
+            ppt_docs = [file for file in files if file.lower().endswith(('.ppt', '.pptx'))]
+            word_docs = [file for file in files if file.lower().endswith(('.doc', '.docx'))]
+            pdf_text = get_pdf_text(pdf_docs)
+            ppt_text = get_text_from_ppt(ppt_docs)
+            word_text = get_text_from_word(word_docs)
+            combined_text = pdf_text + ppt_text + word_text
+            text_chunks = get_text_chunks(combined_text)
+            get_vectorstore(text_chunks)
+            st.success("Done")
 
     # Main content area for displaying chat messages
     st.title("OPENAI CHATBOT")
     st.write("Welcome to the chat!")
-    if st.sidebar.button('Clear Chat History'):
-        clear_chat_history()
+    st.sidebar.button('Clear Chat History', on_click=clear_chat_history)
 
+    # Chat input
     # Placeholder for chat messages
-    if "messages" not in st.session_state:
+
+    if "messages" not in st.session_state.keys():
         st.session_state.messages = [
-            {"role": "assistant", "content": "Upload your files and then ask me a question."}
-        ]
+            {"role": "assistant", "content": "upload some pdfs/ppts and ask me a question"}]
+            {"role": "assistant", "content": "Enter folder path containing pdfs/ppts/word docs and ask me a question"}]
 
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
-            st.write(message["content"])
+            message = {"role": "assistant", "content": full_response}
+            st.session_state.messages.append(message)
 
-    if prompt := st.text_input("You:", key="user_input"):
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        with st.chat_message("user"):
-            st.write(prompt)
-
-    # Display chat messages and bot response
-    if st.session_state.messages[-1]["role"] != "assistant":
-        with st.chat_message("assistant"):
-            with st.spinner("Thinking..."):
-                response = user_input(prompt)
-                if response is not None:
-                    st.write(response)
 
 if __name__ == "__main__":
     main()
