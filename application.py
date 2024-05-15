@@ -92,12 +92,15 @@ def user_input(user_question):
 
     new_db = FAISS.load_local("faiss_index", embeddings, allow_dangerous_deserialization=True) 
     docs = new_db.similarity_search(user_question)
-    chain=get_conversation_chain()
+
+    chain = get_conversation_chain()
 
     response = chain(
         {"input_documents": docs, "question": user_question}, return_only_outputs=True, )
 
+    print(response)
     return response
+
 
 def main():
     st.set_page_config(
