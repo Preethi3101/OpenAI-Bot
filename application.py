@@ -115,12 +115,11 @@ def main():
             with st.spinner("Processing..."):
                 pdf_docs = [doc for doc in pdf_ppt_docs if doc.name.lower().endswith(('.pdf'))]
                 ppt_docs = [doc for doc in pdf_ppt_docs if doc.name.lower().endswith(('.ppt', '.pptx'))]
-                word_docs = [doc for doc in pdf_ppt_docs if doc.name.lower().endswith(('.doc', '.docx'))]  
-                excel_docs = [doc for doc in pdf_ppt_docs if doc.name.lower().endswith(('.xls', '.xlsx'))]  
+                word_docs = [doc for doc in pdf_ppt_docs if doc.name.lower().endswith(('.doc', '.docx'))]    
                 pdf_text = get_pdf_text(pdf_docs)
                 ppt_text = get_text_from_ppt(ppt_docs)
                 word_text = get_text_from_word(word_docs)
-                xl_text = get_text_from_excel(excel_docs)
+                
                 combined_text = pdf_text + ppt_text + word_text
                 text_chunks = get_text_chunks(combined_text)
                 get_vectorstore(text_chunks)
