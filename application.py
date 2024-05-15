@@ -65,6 +65,7 @@ def get_text_chunks(text):
 def get_vectorstore(chunks):
     embeddings = OpenAIEmbeddings()
     vectorstore = FAISS.from_texts(texts=chunks, embedding=embeddings)
+    vectorstore.save_local("faiss_index")
  
 
 def clear_chat_history():
