@@ -7,7 +7,7 @@ faiss-cpu
 altair
 tiktoken
 python-pptx
-docx
+python-docx
 pandas
 openpyxl
 # uncomment to use huggingface llms
