@@ -20,6 +20,19 @@ import pandas as pd
 load_dotenv()
 os.getenv("OPENAI_API_KEY")
 
+import streamlit as st
+import zipfile
+import io
+# Other imports remain the same
+
+def extract_zip_files(zip_file):
+    extracted_files = []
+    with zipfile.ZipFile(zip_file, 'r') as zip_ref:
+        zip_ref.extractall('temp_extracted_files')
+        for file_name in zip_ref.namelist():
+            extracted_files.append('temp_extracted_files/' + file_name)
+    return extracted_files
+
 def get_text_from_word(word_docs):
     text = ""
     for word in word_docs:
@@ -111,23 +124,25 @@ def main():
 
     # Sidebar for uploading PDF files
     # Sidebar for uploading folder
+    # Update the sidebar for zip file upload
     with st.sidebar:
         st.title("Menu:")
-        pdf_ppt_docs = st.file_uploader(
-            "Upload your PDF/PPT Files and Click on Submit & Process", accept_multiple_files=True)
+        uploaded_zip_file = st.file_uploader("Upload your ZIP File", type=['zip'])
         if st.button("Submit & Process"):
             with st.spinner("Processing..."):
-                pdf_docs = [doc for doc in pdf_ppt_docs if doc.name.lower().endswith(('.pdf'))]
-                ppt_docs = [doc for doc in pdf_ppt_docs if doc.name.lower().endswith(('.ppt', '.pptx'))]
-                word_docs = [doc for doc in pdf_ppt_docs if doc.name.lower().endswith(('.doc', '.docx'))]    
-                pdf_text = get_pdf_text(pdf_docs)
-                ppt_text = get_text_from_ppt(ppt_docs)
-                word_text = get_text_from_word(word_docs)
-                
-                combined_text = pdf_text + ppt_text + word_text
-                text_chunks = get_text_chunks(combined_text)
-                get_vectorstore(text_chunks)
-                st.success("Done")
+                if uploaded_zip_file is not None:
+                    extracted_files = extract_zip_files(io.BytesIO(uploaded_zip_file.read()))
+                    pdf_docs = [doc for doc in extracted_files if doc.lower().endswith('.pdf')]
+                    ppt_docs = [doc for doc in extracted_files if doc.lower().endswith(('.ppt', '.pptx'))]
+                    word_docs = [doc for doc in extracted_files if doc.lower().endswith(('.doc', '.docx'))]    
+                    pdf_text = get_pdf_text(pdf_docs)
+                    ppt_text = get_text_from_ppt(ppt_docs)
+                    word_text = get_text_from_word(word_docs)
+                    
+                    combined_text = pdf_text + ppt_text + word_text
+                    text_chunks = get_text_chunks(combined_text)
+                    get_vectorstore(text_chunks)
+                    st.success("Done")
     # Main content area for displaying chat messages
     st.title("Chat with PDF files")
     st.write("Welcome to the chat!")
@@ -167,4 +182,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
