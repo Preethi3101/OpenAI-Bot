@@ -52,7 +52,10 @@ def get_text_from_file(file):
     else:
         return ""
 
-# Other required functions
+def save_text_to_file(text, file_path):
+    with open(file_path, "w", encoding="utf-8") as f:
+        f.write(text)
+
 def get_text_chunks(text):
     splitter = RecursiveCharacterTextSplitter(chunk_size=10000, chunk_overlap=1000)
     chunks = splitter.split_text(text)
@@ -94,17 +97,18 @@ def main():
         zip_file = st.file_uploader("Upload your ZIP File", type="zip")
         if st.button("Submit & Process"):
             if zip_file is not None:
-                with zipfile.ZipFile(BytesIO(zip_file.read()), "r") as z:
-                    z.extractall("uploaded_files")
-                st.success("ZIP file uploaded and extracted successfully.")
-                
                 text = ""
-                for root, _, files in os.walk("uploaded_files"):
-                    for file in files:
-                        file_path = os.path.join(root, file)
-                        with open(file_path, "rb") as f:
-                            text += get_text_from_file(f)
+                with zipfile.ZipFile(BytesIO(zip_file.read()), "r") as z:
+                    for file_info in z.infolist():
+                        with z.open(file_info) as file:
+                            file_bytes = BytesIO(file.read())
+                            file_bytes.name = file_info.filename
+                            text += get_text_from_file(file_bytes)
                 
+                # Save extracted text to a local file
+                save_text_to_file(text, "extracted_text.txt")
+                st.success("Text saved to extracted_text.txt")
+
                 if text:
                     chunks = get_text_chunks(text)
                     embeddings = OpenAIEmbeddings()
