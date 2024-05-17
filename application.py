@@ -183,7 +183,7 @@ def main():
                         get_vectorstore(text_chunks)
                         st.success("Done")
                     
-                    st.warning("Please upload a ZIP file first.")
+    
 
                 response = user_input(prompt)
                 placeholder = st.empty()
