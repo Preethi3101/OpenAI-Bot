@@ -183,6 +183,8 @@ def main():
                     if text_chunks and len(text_chunks) > 0:
                         get_vectorstore(text_chunks)
                         st.success("Done")
+                    else:
+                        st.warning("No text chunks found for vector store creation.")
                 else:
                     st.warning("Please upload a ZIP file first.")
 
