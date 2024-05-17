@@ -11,7 +11,7 @@ python-docx
 pandas
 openpyxl
 bytesioex
-zipfile
+zip-files
 io
 # uncomment to use huggingface llms
 # huggingface-hub==0.14.1
