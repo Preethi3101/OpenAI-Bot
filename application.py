@@ -25,13 +25,6 @@ import zipfile
 import io
 # Other imports remain the same
 
-def extract_zip_files(zip_file):
-    extracted_files = []
-    with zipfile.ZipFile(zip_file, 'r') as zip_ref:
-        zip_ref.extractall('temp_extracted_files')
-        for file_name in zip_ref.namelist():
-            extracted_files.append('temp_extracted_files/' + file_name)
-    return extracted_files
 
 def get_text_from_word(word_docs):
     text = ""
@@ -115,6 +108,12 @@ def user_input(user_question):
     print(response)
     return response
 
+def extract_zip(zip_path, extract_to="uploaded_files"):
+    if not os.path.exists(extract_to):
+        os.makedirs(extract_to)
+    with zipfile.ZipFile(zip_path, "r") as z:
+        z.extractall(extract_to)
+    return [os.path.join(extract_to, file) for file in os.listdir(extract_to)]
 
 def main():
     st.set_page_config(
@@ -122,38 +121,26 @@ def main():
         page_icon="book"
     )
 
-    # Sidebar for uploading PDF files
-    # Sidebar for uploading folder
-    # Update the sidebar for zip file upload
+    # Sidebar for uploading ZIP file
     with st.sidebar:
         st.title("Menu:")
-        uploaded_zip_file = st.file_uploader("Upload your ZIP File", type=['zip'])
+        zip_file = st.file_uploader("Upload your ZIP File", type="zip")
         if st.button("Submit & Process"):
-            with st.spinner("Processing..."):
-                if uploaded_zip_file is not None:
-                    extracted_files = extract_zip_files(io.BytesIO(uploaded_zip_file.read()))
-                    pdf_docs = [doc for doc in extracted_files if doc.lower().endswith('.pdf')]
-                    ppt_docs = [doc for doc in extracted_files if doc.lower().endswith(('.ppt', '.pptx'))]
-                    word_docs = [doc for doc in extracted_files if doc.lower().endswith(('.doc', '.docx'))]    
-                    pdf_text = get_pdf_text(pdf_docs)
-                    ppt_text = get_text_from_ppt(ppt_docs)
-                    word_text = get_text_from_word(word_docs)
-                    
-                    combined_text = pdf_text + ppt_text + word_text
-                    text_chunks = get_text_chunks(combined_text)
-                    get_vectorstore(text_chunks)
-                    st.success("Done")
+            if zip_file is not None:
+                extracted_files = extract_zip(zip_file)
+                st.success("ZIP file uploaded and extracted successfully.")
+            else:
+                st.warning("Please upload a ZIP file.")
+
     # Main content area for displaying chat messages
     st.title("Chat with PDF files")
     st.write("Welcome to the chat!")
     st.sidebar.button('Clear Chat History', on_click=clear_chat_history)
 
-    # Chat input
-    # Placeholder for chat messages
-
+    # Chat input and message display
     if "messages" not in st.session_state.keys():
         st.session_state.messages = [
-            {"role": "assistant", "content": "upload some pdfs and ask me a question"}]
+            {"role": "assistant", "content": "Upload a ZIP file containing PDFs, PPTs, or DOCX files and ask me a question"}]
 
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
@@ -164,10 +151,43 @@ def main():
         with st.chat_message("user"):
             st.write(prompt)
 
-      # Display chat messages and bot response
+    # Process uploaded ZIP file and provide response
     if st.session_state.messages[-1]["role"] != "assistant":
         with st.chat_message("assistant"):
-            with st.spinner("Thinking..."):
+            with st.spinner("Processing..."):
+                if zip_file is not None:
+                    extracted_files = extract_zip(zip_file)
+                    pdf_docs = [file for file in extracted_files if file.lower().endswith('.pdf')]
+                    ppt_docs = [file for file in extracted_files if file.lower().endswith(('.ppt', '.pptx'))]
+                    docx_docs = [file for file in extracted_files if file.lower().endswith('.docx')]
+
+
+                    pdf_text = ''
+                    for pdf_file in pdf_docs:
+                        pdf_text += get_pdf_text(pdf_file)
+
+                    ppt_text = ''
+                    for ppt_file in ppt_docs:
+                        ppt_text += get_text_from_ppt(ppt_file)
+
+                    docx_text = ''
+                    for docx_file in docx_docs:
+                        docx_text += get_text_from_word(docx_file)
+
+                    combined_text = pdf_text + ppt_text + docx_text
+                   
+                    text_chunks = get_text_chunks(combined_text)
+                    
+
+                    # Ensure that embeddings are not empty before creating vector store
+                    if text_chunks and len(text_chunks) > 0:
+                        get_vectorstore(text_chunks)
+                        st.success("Done")
+                    else:
+                        st.warning("No text chunks found for vector store creation.")
+                else:
+                    st.warning("Please upload a ZIP file first.")
+
                 response = user_input(prompt)
                 placeholder = st.empty()
                 full_response = ''
@@ -175,10 +195,10 @@ def main():
                     full_response += item
                     placeholder.markdown(full_response)
                 placeholder.markdown(full_response)
+
         if response is not None:
             message = {"role": "assistant", "content": full_response}
             st.session_state.messages.append(message)
-
 
 if __name__ == "__main__":
     main()
