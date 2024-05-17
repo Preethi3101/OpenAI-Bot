@@ -130,6 +130,8 @@ def main():
                 extracted_files = extract_zip(zip_file)
                 st.success("ZIP file uploaded and extracted successfully.")
             else:
+                st.write("")
+            else:
                 st.warning("Please upload a ZIP file.")
 
     # Main content area for displaying chat messages
