@@ -12,6 +12,7 @@ pandas
 openpyxl
 bytesioex
 zip-files
+azure-cognitiveservices-vision-computervision
 
 # uncomment to use huggingface llms
 # huggingface-hub==0.14.1
