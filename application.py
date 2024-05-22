@@ -12,12 +12,34 @@ from pptx import Presentation
 from docx import Document
 import zipfile
 from io import BytesIO
+from azure.cognitiveservices.vision.computervision import ComputerVisionClient
+from azure.cognitiveservices.vision.computervision.models import OperationStatusCodes
+from msrest.authentication import CognitiveServicesCredentials
 
 # Load environment variables
 load_dotenv()
-os.getenv("OPENAI_API_KEY")
+cv_key = os.getenv("AZURE_VISION_KEY")
+cv_endpoint = os.getenv("AZURE_VISION_ENDPOINT")
 
-# Functions for text extraction from different file types
+# Initialize Azure Computer Vision client
+cv_client = ComputerVisionClient(cv_endpoint, CognitiveServicesCredentials(cv_key))
+
+def get_image_text(image):
+    read_response = cv_client.read_in_stream(image, raw=True)
+    read_operation_location = read_response.headers["Operation-Location"]
+    operation_id = read_operation_location.split("/")[-1]
+
+    while True:
+        read_result = cv_client.get_read_result(operation_id)
+        if read_result.status not in [OperationStatusCodes.not_started, OperationStatusCodes.running]:
+            break
+    text = ""
+    if read_result.status == OperationStatusCodes.succeeded:
+        for page in read_result.analyze_result.read_results:
+            for line in page.lines:
+                text += line.text + "\n"
+    return text
+
 def get_pdf_text(pdf):
     text = ""
     pdf_reader = PdfReader(pdf)
@@ -49,12 +71,19 @@ def get_text_from_file(file):
         return get_ppt_text(file)
     elif filename.endswith('.docx'):
         return get_docx_text(file)
+    elif filename.lower().endswith(('.png', '.jpg', '.jpeg')):
+        return get_image_text(file)
     else:
         return ""
 
-def save_text_to_file(text, file_path):
-    with open(file_path, "w", encoding="utf-8") as f:
-        f.write(text)
+def get_text_from_zip(zip_file):
+    text = ""
+    with zipfile.ZipFile(BytesIO(zip_file.read()), "r") as z:
+        for file_name in z.namelist():
+            if file_name.lower().endswith(('.pdf', '.pptx', '.docx', '.png', '.jpg', '.jpeg')):
+                with z.open(file_name) as inner_file:
+                    text += get_text_from_file(inner_file)
+    return text
 
 def get_text_chunks(text):
     splitter = RecursiveCharacterTextSplitter(chunk_size=10000, chunk_overlap=1000)
@@ -66,8 +95,7 @@ def get_vectorstore(chunks, embeddings):
     vectorstore.save_local("faiss_index")
 
 def clear_chat_history():
-    st.session_state.messages = [
-        {"role": "assistant", "content": "Upload a folder containing PDFs, PPTs, Word, and Excel docs and ask me a question."}]
+    st.session_state.messages = [{"role": "assistant", "content": "Upload some documents and ask me a question."}]
 
 def get_conversation_chain():
     prompt_template = """
@@ -92,38 +120,29 @@ def user_input(user_question, embeddings):
 def main():
     st.set_page_config(page_title="OpenAI PDF/PPT Chatbot", page_icon="book")
 
+    st.title("Chat with Documents")
+    st.write("Welcome to the chat!")
+
     with st.sidebar:
         st.title("Menu:")
         zip_file = st.file_uploader("Upload your ZIP File", type="zip")
         if st.button("Submit & Process"):
             if zip_file is not None:
-                text = ""
-                with zipfile.ZipFile(BytesIO(zip_file.read()), "r") as z:
-                    for file_info in z.infolist():
-                        with z.open(file_info) as file:
-                            file_bytes = BytesIO(file.read())
-                            file_bytes.name = file_info.filename
-                            text += get_text_from_file(file_bytes)
-                
-                # Save extracted text to a local file
-                save_text_to_file(text, "extracted_text.txt")
-                st.success("Text saved to extracted_text.txt")
-
+                text = get_text_from_zip(zip_file)
                 if text:
                     chunks = get_text_chunks(text)
                     embeddings = OpenAIEmbeddings()
                     get_vectorstore(chunks, embeddings)
                     st.success("Text processed and vectorstore created successfully.")
+                else:
+                    st.warning("No valid documents found in the ZIP file.")
             else:
                 st.warning("Please upload a ZIP file.")
 
-    st.title("Chat with Documents")
-    st.write("Welcome to the chat!")
     st.sidebar.button('Clear Chat History', on_click=clear_chat_history)
 
     if "messages" not in st.session_state.keys():
-        st.session_state.messages = [
-            {"role": "assistant", "content": "Upload some documents and ask me a question."}]
+        st.session_state.messages = [{"role": "assistant", "content": "Upload some documents and ask me a question."}]
 
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
@@ -145,6 +164,7 @@ def main():
                         full_response += item
                         placeholder.markdown(full_response)
                     placeholder.markdown(full_response)
+
             if response is not None:
                 message = {"role": "assistant", "content": full_response}
                 st.session_state.messages.append(message)
