@@ -11,6 +11,7 @@ openpyxl
 bytesioex
 zip-files
 langchain
+langchain-community
 azure-cognitiveservices-vision-computervision
 
 # uncomment to use huggingface llms
