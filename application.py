@@ -15,6 +15,7 @@ from io import BytesIO
 from azure.cognitiveservices.vision.computervision import ComputerVisionClient
 from azure.cognitiveservices.vision.computervision.models import OperationStatusCodes
 from msrest.authentication import CognitiveServicesCredentials
+import pandas as pd
 
 # Load environment variables
 load_dotenv()
@@ -63,6 +64,12 @@ def get_docx_text(docx):
         text += para.text
     return text
 
+def get_csv_text(csv_file):
+    text = ""
+    df = pd.read_csv(csv_file)
+    text = df.to_string(index=False)
+    return text
+
 def get_text_from_file(file):
     filename = file.name
     if filename.endswith('.pdf'):
@@ -71,6 +78,8 @@ def get_text_from_file(file):
         return get_ppt_text(file)
     elif filename.endswith('.docx'):
         return get_docx_text(file)
+    elif filename.endswith('.csv'):
+        return get_csv_text(file)
     elif filename.lower().endswith(('.png', '.jpg', '.jpeg')):
         return get_image_text(file)
     else:
@@ -80,7 +89,7 @@ def get_text_from_zip(zip_file):
     text = ""
     with zipfile.ZipFile(BytesIO(zip_file.read()), "r") as z:
         for file_name in z.namelist():
-            if file_name.lower().endswith(('.pdf', '.pptx', '.docx', '.png', '.jpg', '.jpeg')):
+            if file_name.lower().endswith(('.pdf', '.pptx', '.docx', '.csv', '.png', '.jpg', '.jpeg')):
                 with z.open(file_name) as inner_file:
                     text += get_text_from_file(inner_file)
     return text
@@ -118,7 +127,7 @@ def user_input(user_question, embeddings):
     return response
 
 def main():
-    st.set_page_config(page_title="OpenAI PDF/PPT Chatbot", page_icon="book")
+    st.set_page_config(page_title="OpenAI PDF/PPT/CSV Chatbot", page_icon="book")
 
     st.title("Chat with Documents")
     st.write("Welcome to the chat!")
