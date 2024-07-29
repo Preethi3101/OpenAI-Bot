@@ -65,9 +65,12 @@ def get_docx_text(docx):
     return text
 
 def get_csv_text(csv_file):
-    text = ""
-    df = pd.read_csv(csv_file)
-    text = df.to_string(index=False)
+    try:
+        df = pd.read_csv(csv_file, error_bad_lines=False, warn_bad_lines=True)
+        text = df.to_string()
+    except pd.errors.ParserError as e:
+        st.error(f"Error parsing CSV file: {e}")
+        text = ""
     return text
 
 def get_text_from_file(file):
@@ -78,10 +81,10 @@ def get_text_from_file(file):
         return get_ppt_text(file)
     elif filename.endswith('.docx'):
         return get_docx_text(file)
-    elif filename.endswith('.csv'):
-        return get_csv_text(file)
     elif filename.lower().endswith(('.png', '.jpg', '.jpeg')):
         return get_image_text(file)
+    elif filename.endswith('.csv'):
+        return get_csv_text(file)
     else:
         return ""
 
@@ -89,7 +92,7 @@ def get_text_from_zip(zip_file):
     text = ""
     with zipfile.ZipFile(BytesIO(zip_file.read()), "r") as z:
         for file_name in z.namelist():
-            if file_name.lower().endswith(('.pdf', '.pptx', '.docx', '.csv', '.png', '.jpg', '.jpeg')):
+            if file_name.lower().endswith(('.pdf', '.pptx', '.docx', '.png', '.jpg', '.jpeg', '.csv')):
                 with z.open(file_name) as inner_file:
                     text += get_text_from_file(inner_file)
     return text
@@ -127,7 +130,7 @@ def user_input(user_question, embeddings):
     return response
 
 def main():
-    st.set_page_config(page_title="OpenAI PDF/PPT/CSV Chatbot", page_icon="book")
+    st.set_page_config(page_title="OpenAI PDF/PPT Chatbot", page_icon="book")
 
     st.title("Chat with Documents")
     st.write("Welcome to the chat!")
