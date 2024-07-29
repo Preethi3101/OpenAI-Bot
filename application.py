@@ -16,6 +16,11 @@ from azure.cognitiveservices.vision.computervision import ComputerVisionClient
 from azure.cognitiveservices.vision.computervision.models import OperationStatusCodes
 from msrest.authentication import CognitiveServicesCredentials
 import pandas as pd
+import logging
+
+# Initialize logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Load environment variables
 load_dotenv()
@@ -66,9 +71,10 @@ def get_docx_text(docx):
 
 def get_csv_text(csv_file):
     try:
-        df = pd.read_csv(csv_file, error_bad_lines=False, warn_bad_lines=True)
+        df = pd.read_csv(csv_file, on_bad_lines='skip')
         text = df.to_string()
     except pd.errors.ParserError as e:
+        logger.error(f"Error parsing CSV file: {e}")
         st.error(f"Error parsing CSV file: {e}")
         text = ""
     return text
